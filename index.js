@@ -1,6 +1,6 @@
 import express from "express";
 import dotenv from "dotenv";
-import { prisma } from "./src/db.js";
+import { prisma } from "./src/lib/db.js";
 import bodyParser from "body-parser";
 
 dotenv.config();
