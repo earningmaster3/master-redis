@@ -12,9 +12,9 @@ const redisClient = new Redis({
 
 console.log("✅ Upstash Redis (HTTP) initialized");
 
-await redisClient.set("foo", "bar");
-const val = await redisClient.get("foo");
-console.log("Retrieved value:", val);
+// await redisClient.set("foo", "bar");
+// const val = await redisClient.get("foo");
+// console.log("Retrieved value:", val);
 
 
 export default redisClient;
