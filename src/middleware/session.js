@@ -50,6 +50,7 @@ export async function sessionMiddleware(req, res, next) {
             req.sessionToken = token;
         } catch (err) {
             console.error("session read error: ", err.message)
+            return next(err);
         }
     }
     next();
