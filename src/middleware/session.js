@@ -1,4 +1,4 @@
-import redisClient from "../lib/redis";
+import redisClient from "../lib/redis.js";
 import crypto from "crypto";
 
 const SESSION_TTL = 60 * 60;
@@ -10,16 +10,15 @@ export function generateToken() {
     return crypto.randomBytes(32).toString("hex");
 }
 
-export async function createSession(userId) {
+export async function createSession(userId, userData = {}) {
 
     const token = generateToken();
     const key = SESSION_PREFIX + token;
 
     await redisClient.set(
         key,
-        JSON.stringify({ userId }),
-        "EX",
-        SESSION_TTL
+        JSON.stringify({ userId, ...userData, createdAt: Date.now() }),
+        { EX: SESSION_TTL }
     )
 
     return token;
@@ -42,5 +41,18 @@ export async function destroySession(token) {
     await redisClient.del(key);
 }
 
+export async function sessionMiddleware(req, res, next) {
+    const token = req.headers["x-session-token"]
+
+    if (token) {
+        try {
+            req.session = await getSession(token);
+            req.sessionToken = token;
+        } catch (err) {
+            console.error("session read error: ", err.message)
+        }
+    }
+    next();
+}
 
 
