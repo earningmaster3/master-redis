@@ -3,7 +3,7 @@ import dotenv from "dotenv";
 import { prisma } from "./src/lib/db.js";
 import bodyParser from "body-parser";
 import { rateLimiter } from "./src/middleware/rateLimiter.js";
-
+import authRoutes from "./src/routes/authRoutes.js";
 dotenv.config();
 
 const app = express();
@@ -30,6 +30,8 @@ app.post("/users", async (req, res) => {
     });
     res.json(users);
 });
+
+app.use("/auth", authRoutes)
 
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
