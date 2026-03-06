@@ -4,31 +4,37 @@ const MAX_REQUEST = 30;
 const WINDOW_SECONDS = 60;
 
 export async function rateLimiter(req, res, next) {
-    const ip = req.ip || req.headers["x-forwarded-for"];
-    const key = `rate:${ip}`; //atomic key
+    const ip = req.ip || req.headers["x-forwarded-for"] || "unknown";
+    const key = `rate:${ip}`;
 
     try {
-        const current = await redisClient.get(key);
-        //first request in the window
-        if (current === 1) {
-            return res.status(429).json({ message: "Too many requests" });
-        }
-        //set the key with expiry
-        await redisClient.set(key, 1, "EX", WINDOW_SECONDS);
+        // Use INCR to atomatically increment the count
+        const current = await redisClient.incr(key);
 
-        //attach headers so callers can see their message
+        // If it's the first request in this window, set expiration
+        if (current === 1) {
+            await redisClient.expire(key, WINDOW_SECONDS);
+        }
+        const ttl = await redisClient.ttl(key);
+
+        // Set RateLimit headers
         res.setHeader("X-RateLimit-Limit", MAX_REQUEST);
-        res.setHeader("X-RateLimit-Remaining", MAX_REQUEST - current);
-        res.setHeader("X-RateLimit-Reset", WINDOW_SECONDS);
+        res.setHeader("X-RateLimit-Remaining", Math.max(0, MAX_REQUEST - current));
+        res.setHeader("X-RateLimit-Reset", ttl > 0 ? ttl : WINDOW_SECONDS);
 
         if (current > MAX_REQUEST) {
-            const ttl = await redisClient.ttl(key);
-            return res.status(429).json({ message: `Too many requests. Try again in ${ttl} seconds` });
-            retryAfter: ttl;
+            res.setHeader("Retry-After", ttl);
+            return res.status(429).json({
+                message: `Too many requests. Try again in ${ttl} seconds`,
+                retryAfter: ttl
+            });
         }
+
         next();
     } catch (err) {
         console.error("Rate limiter error:", err.message);
+        // On redis error, we usually want to let the request through in production 
+        // to avoid blocking users if the cache is down.
         next();
     }
 }   

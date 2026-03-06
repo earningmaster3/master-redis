@@ -1,18 +1,20 @@
-import redis from "ioredis";
+import { Redis } from "@upstash/redis";
+import "dotenv/config";
 
-const redisClient = new redis({
-    host: process.env.REDIS_HOST,
-    port: process.env.REDIS_PORT,
-    password: process.env.REDIS_PASSWORD,
-    lazyConnect: true,
+const redisClient = new Redis({
+    url: process.env.UPSTASH_REDIS_REST_URL,
+    token: process.env.UPSTASH_REDIS_REST_TOKEN,
 });
 
-redisClient.on("connect", () => {
-    console.log("✅ Redis connected");
-});
+// Note: Upstash REST client doesn't use .on("connect") or .on("error") 
+// because it's a stateless HTTP connection. 
+// It will "just work" when you call methods on it.
 
-redisClient.on("error", (error) => {
-    console.log("❌ Redis error", error);
-});
+console.log("✅ Upstash Redis (HTTP) initialized");
+
+await redisClient.set("foo", "bar");
+const val = await redisClient.get("foo");
+console.log("Retrieved value:", val);
+
 
 export default redisClient;
