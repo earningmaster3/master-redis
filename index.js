@@ -2,6 +2,7 @@ import express from "express";
 import dotenv from "dotenv";
 import { prisma } from "./src/lib/db.js";
 import bodyParser from "body-parser";
+import { rateLimiter } from "./src/middleware/rateLimiter.js";
 
 dotenv.config();
 
@@ -11,6 +12,8 @@ const PORT = process.env.PORT;
 app.use(express.json());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+
+app.use(rateLimiter);
 
 app.get("/", (req, res) => {
     res.send("Hello World!");
