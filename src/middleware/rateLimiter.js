@@ -23,10 +23,11 @@ export async function rateLimiter(req, res, next) {
         res.setHeader("X-RateLimit-Reset", ttl > 0 ? ttl : WINDOW_SECONDS);
 
         if (current > MAX_REQUEST) {
-            res.setHeader("Retry-After", ttl);
+            const retryAfter = ttl > 0 ? ttl : WINDOW_SECONDS;
+            res.setHeader("Retry-After", retryAfter);
             return res.status(429).json({
-                message: `Too many requests. Try again in ${ttl} seconds`,
-                retryAfter: ttl
+                message: `Too many requests. Try again in ${retryAfter} seconds`,
+                retryAfter
             });
         }
 
